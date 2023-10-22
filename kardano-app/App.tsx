@@ -16,8 +16,20 @@ import {
   WebViewScrollEvent,
 } from "react-native-webview/lib/WebViewTypes";
 import { WebView } from "react-native-webview";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import {
+  HomeIcon,
+  ShoppingBagIcon,
+  ShoppingCartIcon,
+  HeartIcon,
+} from "react-native-heroicons/outline";
 
 import NoInternet from "./components/NoInternet";
+import HomeScreen from "./src/screens/Home";
+import ShopScreen from "./src/screens/Shop";
+import CartScreen from "./src/screens/Cart";
+import WishlistScreen from "./src/screens/Wishlist";
 
 type TWebMessage = {
   action: "copy" | "notification_id" | "remove_notification_id";
@@ -28,31 +40,10 @@ type TNotificationData = {
   link?: string;
 };
 
+const Tab = createBottomTabNavigator();
+
 export default function App() {
-  const webViewRef = useRef<WebView>(null);
-
-  const [refresherEnabled, setEnableRefresher] = useState(true);
   const [internetAvailable, setInternetAvailable] = useState(true);
-  const [webviewLink, setWebviewLink] = useState("https://kardano.in");
-
-  const onAndroidBackPress = (): boolean => {
-    if (webViewRef.current) {
-      webViewRef.current.goBack();
-      return true; // prevent default behavior (exit app)
-    }
-    return false;
-  };
-
-  const handleWebMessage = async (e: WebViewMessageEvent) => {
-    const message: TWebMessage = JSON.parse(e.nativeEvent.data);
-    // if (message.action === "copy") await Clipboard.setStringAsync(message.data);
-    // if (message.action === "notification_id") {
-    //   OneSignal.setExternalUserId(String(message.data));
-    // }
-    // if (message.action === "remove_notification_id") {
-    //   OneSignal.removeExternalUserId();
-    // }
-  };
 
   const holdSplashScreen = async () => {
     // keep splash screen visible
@@ -68,60 +59,71 @@ export default function App() {
       setInternetAvailable(!!state.isConnected);
     });
     holdSplashScreen();
-    if (Platform.OS === "android") {
-      BackHandler.addEventListener("hardwareBackPress", onAndroidBackPress);
-      return (): void => {
-        BackHandler.removeEventListener(
-          "hardwareBackPress",
-          onAndroidBackPress
-        );
-      };
-    }
     return () => {
       unsubscribe();
     };
   }, []);
-
-  //Code to get scroll position
-  const handleScroll = (event: WebViewScrollEvent) => {
-    const yOffset = Number(event.nativeEvent.contentOffset.y);
-    setEnableRefresher(yOffset === 0);
-  };
 
   if (!internetAvailable) {
     return <NoInternet />;
   }
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
-      }}
-    >
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={{ flex: 1 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={false}
-            enabled={refresherEnabled}
-            onRefresh={() => {
-              webViewRef?.current?.reload();
-            }}
-          />
-        }
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "white",
+          },
+        }}
       >
-        <WebView
-          source={{ uri: webviewLink }}
-          style={{ flex: 1 }}
-          ref={webViewRef}
-          allowsBackForwardNavigationGestures={true}
-          javaScriptEnabled
-          allowUniversalAccessFromFileURLs
-          onMessage={handleWebMessage}
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ focused }) => (
+              <HomeIcon size="26" color={focused ? "#00B9F1" : "black"} />
+            ),
+          }}
         />
-      </ScrollView>
-    </SafeAreaView>
+        <Tab.Screen
+          name="Shop"
+          component={ShopScreen}
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ focused }) => (
+              <ShoppingBagIcon
+                size="26"
+                color={focused ? "#00B9F1" : "black"}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Cart"
+          component={CartScreen}
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ focused }) => (
+              <ShoppingCartIcon
+                size="26"
+                color={focused ? "#00B9F1" : "black"}
+              />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Wishlist"
+          component={WishlistScreen}
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ focused }) => (
+              <HeartIcon size="26" color={focused ? "#00B9F1" : "black"} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
